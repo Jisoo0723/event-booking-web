@@ -1,45 +1,46 @@
 @extends('layouts.app')
-@section('title','Upcoming Events')
+@section('title', 'Home')
 
 @section('content')
-<div class="max-w-5xl mx-auto p-6">
-  <h1 class="text-xl font-semibold mb-4">Upcoming Events</h1>
+<div class="mx-auto max-w-6xl px-6 py-8">
 
-  <form method="GET" action="{{ route('home') }}" class="mb-4 flex gap-2">
-    <input name="q"
-           value="{{ $q ?? '' }}"
-           placeholder="Search events or location"
-           class="border rounded px-3 py-2 w-full md:w-80">
-    <button type="submit" class="px-3 py-2 bg-blue-600 text-white rounded">
-      Search
-    </button>
+  {{-- 헤더 --}}
+  <div class="mb-6">
+    <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-gray-900">
+      🔥 Trending Events
+    </h1>
+    <p class="mt-2 text-gray-600">Check out the most popular events right now.</p>
+  </div>
+
+  {{-- 검색 (홈에서는 결과를 /events로 보냄) --}}
+  <form action="{{ route('events.index') }}" method="GET" class="mb-6">
+    <div class="relative">
+      <input type="text" name="q" placeholder="Search events"
+             class="w-full rounded-xl border-0 ring-1 ring-black/10 px-4 py-3 pl-11 text-[15px] placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#2973EB]">
+      <svg xmlns="http://www.w3.org/2000/svg" class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400"
+           viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd"
+              d="M9 3.5a5.5 5.5 0 104.09 9.31l3.55 3.55a1 1 0 001.42-1.42l-3.55-3.55A5.5 5.5 0 009 3.5zM5 9a4 4 0 118 0A4 4 0 015 9z"
+              clip-rule="evenodd"/>
+      </svg>
+    </div>
   </form>
 
-  @include('partials.flash')
-
-  @if($events->isEmpty())
-    <p>여기에 “미래 이벤트 목록”이 나올 자리입니다.</p>
-  @else
-    <div class="grid md:grid-cols-2 gap-4">
+  {{-- 그리드 --}}
+  @if($events->count())
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
       @foreach($events as $event)
-        <div class="bg-white p-4 rounded border">
-          <a class="text-lg font-medium hover:underline"
-             href="{{ route('events.show', $event) }}">{{ $event->title }}</a>
-          <div class="text-sm text-gray-600">
-            {{ $event->event_date->format('Y-m-d H:i') }} · {{ $event->location }}
-          </div>
-          <div class="text-sm mt-1">
-            Organiser: {{ $event->organiser->name ?? 'N/A' }}
-          </div>
-          <div class="text-sm mt-1">
-            Remaining: {{ $event->remainingSpots() }}
-          </div>
-        </div>
+        <x-event-card :event="$event" />
       @endforeach
     </div>
 
-    <div class="mt-6">
-      {{ $events->links() }}
+    {{-- 페이지네이션 --}}
+    <div class="mt-8 flex justify-center">
+      {{ $events->onEachSide(1)->links() }}
+    </div>
+  @else
+    <div class="rounded-lg border border-dashed p-10 text-center text-gray-600">
+      No trending events yet.
     </div>
   @endif
 </div>

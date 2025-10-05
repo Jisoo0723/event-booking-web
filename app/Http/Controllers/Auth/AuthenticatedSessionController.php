@@ -28,7 +28,15 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        // 로그인한 유저의 역할(role)에 따라 리다이렉트
+        $user = auth()->user();
+
+        if ($user->role === 'organiser') {
+            return redirect()->route('organiser.dashboard');
+        }
+
+        // attendee 또는 guest
+        return redirect()->route('home');
     }
 
     /**

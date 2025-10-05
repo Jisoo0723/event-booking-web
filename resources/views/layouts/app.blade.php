@@ -6,8 +6,8 @@
   <title>@yield('title', 'Event App')</title>
   @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="font-sans antialiased">
-  <div class="min-h-screen bg-gray-100">
+<body class="font-sans antialiased bg-gray-100">
+  <div class="min-h-screen flex flex-col">
 
     @php
         $authRouteNames = [
@@ -23,29 +23,35 @@
         }
     @endphp
 
-    @include('layouts.navigation')   {{-- 네비 --}}
+    {{-- ✅ 네비게이션 --}}
+    @include('layouts.navigation')
 
-    @include('partials.flash')       {{-- success / error 플래시 --}}
+    {{-- ✅ 플래시 메시지 --}}
+    @include('partials.flash')
 
-    <script>
-    // 자동 사라짐: 3초 후 페이드아웃 > 제거
+    {{-- ✅ 본문 --}}
+    <main class="relative z-0 flex-1">
+      {{ $slot ?? '' }}
+      @yield('content')
+    </main>
+
+    {{-- ✅ 모달 스택 --}}
+    @stack('modals')
+
+  </div>
+
+  <script>
+    // 플래시 메시지 자동 사라짐
     window.addEventListener('DOMContentLoaded', () => {
       document.querySelectorAll('.js-flash').forEach((el) => {
         const ms = parseInt(el.getAttribute('data-timeout') || '3000', 10);
         setTimeout(() => {
-          // fade-out 애니메이션
           el.style.opacity = '0';
           el.style.transform = 'translateY(-4px)';
-          setTimeout(() => { el.remove(); }, 300); // 애니메이션 끝나면 제거
+          setTimeout(() => el.remove(), 300);
         }, ms);
       });
     });
   </script>
-
-    <main>
-      {{ $slot ?? '' }}
-      @yield('content')
-    </main>
-  </div>
 </body>
 </html>

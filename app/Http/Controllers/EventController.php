@@ -4,55 +4,50 @@ namespace App\Http\Controllers;
 
 use App\Models\Event;
 use App\Http\Requests\EventRequest;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class EventController extends Controller
 {
-    // 공개 목록
+    use AuthorizesRequests;
+
+    public function indexPopular()
+    {
+        $events = Event::with('organiser')
+            ->upcoming()
+            ->withCount('bookings')
+            ->orderByDesc('bookings_count')
+            ->orderBy('event_date', 'asc')
+            ->paginate(8);
+
+        return view('home', compact('events'));
+    }
+
     public function index()
     {
         $events = Event::with('organiser')
             ->upcoming()
-            ->withCount('bookings')        // 예약 수
-            ->orderByDesc('bookings_count')// 예약 많은 순
-            ->orderBy('event_date','asc')  // 동률이면 날짜 가까운 순
+            ->withCount('bookings')
+            ->orderBy('event_date', 'asc')
             ->paginate(8);
 
-        // 홈에서도 events.index 뷰 재사용한다면:
         $categories = ['All','Art','Business','Fashion','Film','Food & Drink','Music','Sports','Tech'];
+
         return view('events.index', [
             'events'     => $events,
-            'q'          => null,
-            'category'   => null,
+            'q'          => request('q'),
+            'category'   => request('category'),
             'categories' => $categories,
         ]);
     }
 
-    public function indexPopular()
-    {
-        $events = \App\Models\Event::with('organiser')
-            ->upcoming()
-            ->withCount('bookings')
-            ->orderByDesc('bookings_count')
-            ->orderBy('event_date','asc')
-            ->paginate(8);
-
-        // 카테고리 제외 (홈에는 필요 없음)
-        return view('events.index', [
-            'events'     => $events,
-            'q'          => null,
-            'category'   => null,
-        ]);
-    }
-
-    // 이벤트 상세 보기 (모델 바인딩 + 정책/규칙 반영)
+    // 이벤트 상세 보기
     public function show(Event $event)
     {
-        // 필요 데이터 eager-load
         $event->load('organiser')->loadCount('bookings');
 
-        // 과거 이벤트는 organiser만 접근 (Policy와 동일 로직 유지)
+        // 과거 이벤트 접근 제한
         if ($event->isPast() && !(auth()->check() && auth()->user()->role === 'organiser')) {
-            return redirect()->route('events.index')->with('error','This event has passed.');
+            return redirect()->route('events.index')->with('error', 'This event has passed.');
         }
 
         $user = auth()->user();
@@ -80,7 +75,7 @@ class EventController extends Controller
         ));
     }
 
-    // (Organiser 전용) 대시보드
+    // Organiser 대시보드
     public function organiserDashboard()
     {
         $events = Event::where('organizer_id', auth()->id())
@@ -91,17 +86,17 @@ class EventController extends Controller
         return view('events.organiser-dashboard', compact('events'));
     }
 
-    // (Organiser 전용) 생성 폼 - routes에서 can:isOrganiser로 보호됨
+    // Organiser - 이벤트 생성 폼
     public function create()
     {
         return view('events.create', ['event' => new Event()]);
     }
 
-    // (Organiser 전용) 저장
+    // 저장
     public function store(EventRequest $request)
     {
         $data = $request->validated();
-        $data['organiser_id'] = auth()->id(); // 모델의 브리지(mutator)로 organizer_id에 저장
+        $data['organizer_id'] = auth()->id(); 
 
         $event = Event::create($data);
 
@@ -110,19 +105,16 @@ class EventController extends Controller
             ->with('success', 'Event created.');
     }
 
-    // (Organiser 전용) 수정 폼
+    // 수정 폼
     public function edit(Event $event)
     {
-        // 정책 사용
         $this->authorize('update', $event);
-
         return view('events.edit', compact('event'));
     }
 
-    // (Organiser 전용) 업데이트
+    // 업데이트
     public function update(EventRequest $request, Event $event)
     {
-        // 정책 사용
         $this->authorize('update', $event);
 
         $event->update($request->validated());
@@ -132,12 +124,10 @@ class EventController extends Controller
             ->with('success', 'Event updated.');
     }
 
-    // (Organiser 전용) 삭제
+    // 삭제
     public function destroy(Event $event)
     {
-        // 정책 사용
         $this->authorize('delete', $event);
-
         $event->delete();
 
         return redirect()
