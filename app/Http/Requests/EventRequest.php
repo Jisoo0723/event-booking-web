@@ -8,7 +8,7 @@ class EventRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        // routes/web.php 에서 이미 can:isOrganiser 미들웨어로 보호됨
+        // routes/web.php에서 이미 can:isOrganiser 미들웨어로 보호됨
         return auth()->check();
     }
 
@@ -16,10 +16,12 @@ class EventRequest extends FormRequest
     {
         return [
             'title'       => ['required','string','max:255'],
-            'description' => ['nullable','string'],
+            'description' => ['nullable','string','max:2000'],
             'event_date'  => ['required','date','after:now'], // 과거 금지
             'location'    => ['required','string','max:255'],
-            'capacity'    => ['required','integer','min:1'],
+            'capacity' => ['required','integer','min:1'],
+            'category'    => ['nullable','string','max:50'],
+            'image'       => ['nullable','string','max:255'],
         ];
     }
 
@@ -27,6 +29,7 @@ class EventRequest extends FormRequest
     {
         return [
             'event_date.after' => 'Event date must be in the future.',
+            'capacity.min'     => 'Capacity must be at least 1.',
         ];
     }
 }

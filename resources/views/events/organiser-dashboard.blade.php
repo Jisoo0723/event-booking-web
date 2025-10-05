@@ -34,8 +34,10 @@
             </td>
             <td class="p-3">{{ $event->event_date->format('Y-m-d H:i') }}</td>
             <td class="p-3">{{ $event->capacity }}</td>
-            <td class="p-3">{{ $event->bookings()->count() }}</td>
-            <td class="p-3">{{ $event->remainingSpots() }}</td>
+            <td class="p-3">{{ $event->bookings_count }}</td>
+            <td class="p-3">
+              {{ max(0, (int)$event->capacity - (int)($event->bookings_count ?? 0)) }}
+            </td>
             <td class="p-3">
               <a href="{{ route('events.edit', $event) }}" class="text-blue-600 underline">Edit</a>
               <a href="{{ route('bookings.export', $event) }}" class="text-indigo-600 hover:underline ml-2">CSV</a>
@@ -108,12 +110,21 @@
     fetch(`{{ url('/events') }}/${eventId}/attendees`, {
       headers: { 'X-Requested-With': 'XMLHttpRequest' }
     })
-    .then(res => {
-      if (!res.ok) throw new Error('Failed to load attendees');
+    .then(async (res) => {
+      if (!res.ok) {
+        const txt = await res.text().catch(()=>'');
+        console.error(`❌ HTTP ${res.status} ${res.statusText}`, txt);
+        throw new Error(`HTTP ${res.status} ${res.statusText}`);
+      }
       return res.text();
     })
-    .then(html => { body.innerHTML = html; })
-    .catch(() => { body.innerHTML = '<div class="text-red-600">Failed to load attendees.</div>'; });
+    .then(html => {
+      body.innerHTML = html;
+    })
+    .catch(err => {
+      console.error(err);
+      body.innerHTML = '<div class="text-red-600">Failed to load attendees.</div>';
+    });
 
     document.addEventListener('keydown', escCloser);
   }

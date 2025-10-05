@@ -12,19 +12,37 @@ class Event extends Model
     use HasFactory;
 
     protected $fillable = [
-        'title','description','event_date','location','capacity','organizer_id',
+        'title','description','event_date','location','capacity',
+        'organiser_id','organizer_id', 
+        'category','image',
     ];
 
     protected $casts = [
         'event_date' => 'datetime',
     ];
 
-    public function organizer()
+    public function organiser()
     {
-        return $this->belongsTo(User::class, 'organizer_id');
+        return $this->belongsTo(User::class, 'organizer_id'); 
     }
 
-    public function organiser() { return $this->organizer(); }
+    // organiser_id <-> organizer_id 자동 브리지
+    public function setOrganiserIdAttribute($value)
+    {
+        // 코드에서 organiser_id에 값을 넣으면 실제로는 organizer_id에 저장됨
+        $this->attributes['organizer_id'] = $value;
+    }
+
+    public function getOrganiserIdAttribute()
+    {
+        // organiser_id로 읽으면 organizer_id 값을 돌려줌
+        return $this->attributes['organizer_id'] ?? null;
+    }
+
+    public function organizer()
+    {
+        return $this->organiser();
+    }
 
     public function bookings()
     {
@@ -38,23 +56,45 @@ class Event extends Model
 
     public function remainingSpots(): int
     {
-        return max(0, (int)$this->capacity - (int)$this->bookings()->count());
+        // status 컬럼이 있고 'cancelled'를 제외한다고 가정
+        $active = $this->bookings()->where('status', '!=', 'cancelled')->count();
+        return max(0, (int)$this->capacity - $active);
     }
 
     public function isPast(): bool
     {
-        return optional($this->event_date)->isPast();
+        // 현재 시각보다 이전이면 과거로 간주
+        return $this->event_date?->lt(now(config('app.timezone'))) ?? false;
     }
 
     // 앞으로 있을 이벤트만 (정렬은 컨트롤러에서)
-    public function scopeUpcoming(Builder $query): Builder
+    public function scopeUpcoming(Builder $q): Builder
     {
-        return $query->where('event_date', '>', Carbon::now());
+        // 앞으로 있을 이벤트만 (정렬은 컨트롤러에서)
+        return $q->where('event_date', '>', now(config('app.timezone')));
     }
 
     // (옵션) 지난 이벤트
     public function scopePast(Builder $query): Builder
     {
-        return $query->where('event_date', '<=', Carbon::now());
+        // 지난 이벤트
+        return $query->where('event_date', '<=', now(config('app.timezone')));
     }
+
+    public function scopeCategory(Builder $q, ?string $category): Builder
+    {
+        return ($category && $category !== 'All')
+            ? $q->where('category', $category)
+            : $q;
+    }
+
+    public function scopeSearch(Builder $q, ?string $term): Builder
+    {
+        if (!$term) return $q;
+        return $q->where(function ($qq) use ($term) {
+            $qq->where('title', 'like', "%{$term}%")
+            ->orWhere('location', 'like', "%{$term}%");
+        });
+    }
+
 }

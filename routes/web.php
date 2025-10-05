@@ -7,7 +7,7 @@ use App\Http\Controllers\BookingController;
 use Illuminate\Support\Facades\Route;
 
 // 홈 (미래 이벤트 목록은 HomeController에서 처리)
-Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/', [EventController::class, 'indexPopular'])->name('home');
 
 // 대시보드(필요 시 유지)
 Route::get('/dashboard', fn () => view('dashboard'))

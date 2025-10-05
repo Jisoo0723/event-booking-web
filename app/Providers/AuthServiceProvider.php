@@ -9,8 +9,9 @@ use App\Models\User;                  //  User 모델 사용
 class AuthServiceProvider extends ServiceProvider
 {
     protected $policies = [
-        // 'App\Models\Post' => 'App\Policies\PostPolicy',
+        \App\Models\Event::class => \App\Policies\EventPolicy::class,
     ];
+
 
     public function boot(): void
     {
