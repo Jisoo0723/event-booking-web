@@ -6,9 +6,11 @@ use App\Models\Booking;
 use App\Models\Event;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class BookingController extends Controller
 {
+    use AuthorizesRequests; 
     // 내 예약 목록
     public function index()
     {
@@ -130,7 +132,6 @@ class BookingController extends Controller
                     ->format('Y-m-d H:i'),
             ]);
 
-        // UTF-8 BOM, 빈 목록 허용
         return response()->streamDownload(function () use ($rows) {
             $out = fopen('php://output', 'w');
 
@@ -154,14 +155,33 @@ class BookingController extends Controller
 
     public function attendeesPartial(Event $event)
     {
-        abort_unless(auth()->check() && auth()->user()->role === 'organiser', 403);
+        // 로그인 및 권한 확인
+        if (!auth()->check()) {
+            return response('<div class="p-4 text-red-600">Not logged in.</div>', 403);
+        }
 
-        $bookings = $event->bookings()
-            ->with(['user:id,name,email'])
-            ->orderByDesc('created_at')
-            ->get();
+        if (auth()->user()->role !== 'organiser') {
+            return response('<div class="p-4 text-red-600">Not organiser.</div>', 403);
+        }
 
-        return response()->view('partials.attendees_table', compact('event','bookings'), 200);
+        // 🔧 organiser_id 또는 organizer_id 확인
+        if (($event->organiser_id ?? $event->organizer_id) !== auth()->id()) {
+            return response('<div class="p-4 text-red-600">You are not the owner of this event.</div>', 403);
+        }
+
+        // 예약자 목록 가져오기
+        $bookings = $event->bookings()->with('user:id,name,email')->orderByDesc('created_at')->get();
+
+        if ($bookings->isEmpty()) {
+            return '<div class="p-4 text-gray-600">No attendees yet.</div>';
+        }
+
+        // partial 뷰로 반환
+        return view('partials.attendees_table', [
+            'bookings' => $bookings,
+            'event'    => $event,
+        ]);
     }
+
 
 }

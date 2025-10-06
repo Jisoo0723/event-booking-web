@@ -12,16 +12,30 @@
         </a>
 
         @php
-          $isHome   = request()->routeIs('home');
-          $isEvents = request()->routeIs('events.index') || request()->routeIs('events.show');
-          $isCreate = request()->routeIs('events.create');
-          $isDash   = request()->routeIs('organiser.dashboard');
-          $isBooks  = request()->routeIs('bookings.*');
+          // 자식 뷰(예: events/show.blade.php)에서 @php($activeNav='dashboard')로 내려보내면
+          // 여기에서 우선 적용합니다.
+          $key = $activeNav ?? null;
+
+          if ($key) {
+              $isHome   = ($key === 'home');
+              $isEvents = ($key === 'events');
+              $isCreate = ($key === 'create');
+              $isDash   = ($key === 'dashboard');
+              $isBooks  = ($key === 'bookings');
+          } else {
+              // 기본: 현재 라우트로 판정
+              $isHome   = request()->routeIs('home');
+              $isEvents = request()->routeIs('events.index') || request()->routeIs('events.show');
+              $isCreate = request()->routeIs('events.create');
+              $isDash   = request()->routeIs('organiser.dashboard');
+              $isBooks  = request()->routeIs('bookings.*');
+          }
 
           $linkBase = 'inline-flex items-center h-10 px-3 leading-10 text-sm';
           $active   = 'text-indigo-600 font-semibold';
           $normal   = 'text-gray-900';
         @endphp
+
 
         <div class="hidden sm:flex items-center gap-8">
           <a href="{{ route('events.index') }}"

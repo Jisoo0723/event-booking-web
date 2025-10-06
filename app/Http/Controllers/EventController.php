@@ -40,12 +40,12 @@ class EventController extends Controller
         ]);
     }
 
-    // 이벤트 상세 보기
+    // Event detail view
     public function show(Event $event)
     {
         $event->load('organiser')->loadCount('bookings');
 
-        // 과거 이벤트 접근 제한
+        // Block access if event already passed
         if ($event->isPast() && !(auth()->check() && auth()->user()->role === 'organiser')) {
             return redirect()->route('events.index')->with('error', 'This event has passed.');
         }
@@ -66,16 +66,28 @@ class EventController extends Controller
             $myBookingId   = $myBooking?->id;
         }
 
-        return view('events.show', compact(
-            'event',
-            'isAttendee',
-            'isOrganiser',
-            'alreadyBooked',
-            'myBookingId'
-        ));
+        $isGuest  = !$user;
+        $ownerId  = $event->organiser_id ?? $event->organizer_id ?? null;
+        $ownsEvent = $isOrganiser && ($ownerId === ($user->id ?? null));
+
+        return view('events.show', [
+            'event' => $event,
+            'isGuest' => $isGuest,
+            'isAttendee' => $isAttendee,
+            'isOrganiser' => $isOrganiser,
+            'alreadyBooked' => $alreadyBooked,
+            'myBookingId' => $myBookingId,
+            'ownerId' => $ownerId,
+            'ownsEvent' => $ownsEvent,
+            'date' => $event->event_date ? $event->event_date->timezone(config('app.timezone')) : null,
+            'orgName' => $event->organiser->name ?? $event->organiser?->email ?? 'Organizer',
+            'remaining' => method_exists($event, 'remainingSpots')
+                ? $event->remainingSpots()
+                : max(0, (int)$event->capacity - (int)($event->bookings_count ?? $event->bookings()->count())),
+        ]);
     }
 
-    // Organiser 대시보드
+    // Organiser dashboard
     public function organiserDashboard()
     {
         $events = Event::where('organizer_id', auth()->id())
@@ -86,13 +98,13 @@ class EventController extends Controller
         return view('events.organiser-dashboard', compact('events'));
     }
 
-    // Organiser - 이벤트 생성 폼
+    // Organiser create form
     public function create()
     {
         return view('events.create', ['event' => new Event()]);
     }
 
-    // 저장
+    // Store
     public function store(EventRequest $request)
     {
         $data = $request->validated();
@@ -105,14 +117,14 @@ class EventController extends Controller
             ->with('success', 'Event created.');
     }
 
-    // 수정 폼
+    // Edit form
     public function edit(Event $event)
     {
         $this->authorize('update', $event);
         return view('events.edit', compact('event'));
     }
 
-    // 업데이트
+    // Update
     public function update(EventRequest $request, Event $event)
     {
         $this->authorize('update', $event);
@@ -124,7 +136,7 @@ class EventController extends Controller
             ->with('success', 'Event updated.');
     }
 
-    // 삭제
+    // Delete
     public function destroy(Event $event)
     {
         $this->authorize('delete', $event);
@@ -135,3 +147,4 @@ class EventController extends Controller
             ->with('success', 'Event deleted.');
     }
 }
+

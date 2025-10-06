@@ -60,7 +60,8 @@ Route::middleware('auth')->group(function () {
             ->name('bookings.manage')->whereNumber('event');
 
         Route::get('/events/{event}/attendees', [BookingController::class, 'attendeesPartial'])
-        ->name('bookings.attendees')->whereNumber('event');
+            ->name('events.attendees')
+            ->whereNumber('event');
 
         // 예약 내역 엑셀/CSV 등으로 내보내기
         Route::get('/events/{event}/bookings/export', [BookingController::class, 'export'])
