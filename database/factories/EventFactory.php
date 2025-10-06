@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -20,7 +21,7 @@ class EventFactory extends Factory
             'capacity' => rand(20, 200),
             'category' => $cats[array_rand($cats)],
             'image' => null, // 필요 시 파일명
-            'organizer_id' => 1, // 미리 만든 organiser 계정
+            'organizer_id' => User::factory()->state(['role' => 'organiser']),
         ];
     }
 }

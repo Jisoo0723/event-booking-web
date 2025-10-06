@@ -47,9 +47,12 @@ class RegisteredUserController extends Controller
 
         event(new Registered($user));
 
+        app('session')->flush();
+
         // log them in and go to attendee landing (change route if needed)
         Auth::login($user);
 
+        
         return redirect()->route('home');
     }
 }

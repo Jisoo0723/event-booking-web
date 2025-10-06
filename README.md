@@ -59,3 +59,15 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+
+# 의존성
+composer install
+npm ci && npm run build
+
+# 테스트용 DB 준비(최초 1회)
+php artisan migrate:fresh --seed --env=testing
+
+# 전체 테스트
+php artisan test --testdox
+

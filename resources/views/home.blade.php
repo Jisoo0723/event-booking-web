@@ -12,7 +12,7 @@
     <p class="text-gray-600 mt-1">Check out the most popular events right now.</p>
   </div>
 
-  {{-- 검색/카테고리 = 홈에선 제거 (원하면 남겨도 됨) --}}
+  {{-- 검색/카테고리 = 홈에선 제거 --}}
   {{-- <form ...> ... </form> --}}
   {{-- 카테고리 탭 ... --}}
 
