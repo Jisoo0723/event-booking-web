@@ -43,6 +43,34 @@
     <h1 class="text-3xl md:text-4xl font-semibold tracking-tight text-gray-900">
       {{ $event->title }}
     </h1>
+
+    {{-- 카테고리 뱃지 --}}
+    <div class="mt-2 flex flex-wrap items-center gap-2 text-sm text-gray-600">
+      <span>{{ $date->format('M d, Y g:i A') }}</span>
+      <span class="text-gray-300">•</span>
+      <span class="truncate">{{ $event->location }}</span>
+      <span class="text-gray-300">•</span>
+
+      {{-- 카테고리 뱃지 --}}
+      @if(!empty($event->category))
+        <a
+          href="{{ route('events.index', ['category' => $event->category]) }}"
+          class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium
+                bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100">
+          {{-- 아이콘(선택) --}}
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 3l10 6-10 6L2 9l10-6zm0 8.485l10-6V21l-10 6-10-6V5.485l10 6z"/>
+          </svg>
+          {{ $event->category }}
+        </a>
+      @else
+        <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs
+                    bg-gray-100 text-gray-600 border border-gray-200">
+          Uncategorized
+        </span>
+      @endif
+    </div>
+
     @if ($event->description)
       <p class="mt-4 text-gray-600 leading-7 max-w-3xl">
         {{ $event->description }}

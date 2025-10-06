@@ -208,4 +208,29 @@ class EventController extends Controller
             ->route('events.index')
             ->with('success', 'Event deleted.');
     }
+
+    public function indexFilter()
+    {
+        // AJAX 전용: /events 필터
+        $category = request('category');   
+        $q        = request('q');          
+        $perPage  = 8;
+
+        $events = Event::with('organiser')
+            ->upcoming()
+            ->when($category && $category !== 'All', fn($qq) => $qq->where('category', $category))
+            ->when($q, fn($qq) => $qq->where(function ($w) use ($q) {
+                $w->where('title','like',"%{$q}%")
+                ->orWhere('location','like',"%{$q}%")
+                ->orWhere('description','like',"%{$q}%");
+            }))
+            ->withCount('bookings')
+            ->orderBy('event_date','asc')  
+            ->paginate($perPage)
+            ->withQueryString();
+
+        // 카드+페이징 조각만 반환
+        return view('partials.events_cards', compact('events'))->render();
+    }
+
 }

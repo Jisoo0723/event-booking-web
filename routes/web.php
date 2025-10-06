@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [EventController::class, 'indexPopular'])->name('home');
 
 Route::get('/home/filter', [EventController::class, 'homeFilter'])->name('home.filter');
+Route::get('/events/filter', [App\Http\Controllers\EventController::class, 'indexFilter'])
+    ->name('events.filter');
 
 // 대시보드(필요 시 유지)
 Route::get('/dashboard', fn () => view('dashboard'))
