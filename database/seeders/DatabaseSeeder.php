@@ -26,6 +26,8 @@ class DatabaseSeeder extends Seeder
             'role' => 'organiser',
         ]);
 
+        User::factory()->count(10)->state(['role' => 'attendee'])->create();
+        
         // Create sample events -> organisers
         Event::create([
             'title' => 'Tech Conference 2026',
@@ -41,6 +43,10 @@ class DatabaseSeeder extends Seeder
             'event_date' => now()->addMonths(1)->setTime(18, 30),
             'location' => 'South Bank',
             'organizer_id' => $org2->id,
+        ]);
+
+        \App\Models\User::factory(10)->create([
+            'role' => 'attendee',
         ]);
 
         \App\Models\Event::factory(15)->create();
