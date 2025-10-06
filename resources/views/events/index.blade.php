@@ -2,6 +2,11 @@
 @section('title', 'Events')
 
 @section('content')
+@php
+  $q = request('q');
+  $category = request('category', 'All');   // 기본값 'All'
+@endphp
+
 <div class="max-w-6xl mx-auto p-6">
   <div class="mb-6">
     <h1 class="text-2xl md:text-3xl font-bold flex items-center gap-2">
@@ -9,19 +14,19 @@
     </h1>
   </div>
 
-
   {{-- 검색 폼 --}}
   <form method="GET" action="{{ route('events.index') }}" class="mb-5 flex gap-2">
     <input
       type="text"
       name="q"
-      value="{{ request('q') }}"
+      value="{{ $q }}"
       placeholder="Search events"
       class="border rounded-lg px-3 py-2 w-full md:w-96 focus:outline-none focus:ring focus:ring-blue-200"
     >
-    @if(request('category'))
-      <input type="hidden" name="category" value="{{ request('category') }}">
+    @if($category !== 'All')
+      <input type="hidden" name="category" value="{{ $category }}">
     @endif
+
     <button type="submit" class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">
       Search
     </button>
@@ -31,10 +36,17 @@
   @if(!empty($categories))
     <div class="mb-4 flex flex-wrap gap-2">
       @foreach($categories as $c)
-        @php $active = (request('category', 'All') === $c); @endphp
-        <a href="{{ route('events.index', array_filter(['category' => $c !== 'All' ? $c : null, 'q' => $q])) }}"
-           class="text-sm px-3 py-1.5 rounded-full border {{ $active ? 'bg-blue-600 text-white border-blue-600' : 'text-gray-700 border-gray-300 hover:bg-gray-100' }}">
-           {{ $c }}
+        @php $active = ($category === $c); @endphp
+        <a
+          {{-- All이면 category 파라미터 제거, 검색어는 유지 --}}
+          href="{{ route('events.index', array_filter([
+              'category' => $c !== 'All' ? $c : null,
+              'q'        => $q,
+          ])) }}"
+          class="text-sm px-3 py-1.5 rounded-full border
+                 {{ $active ? 'bg-blue-600 text-white border-blue-600'
+                            : 'text-gray-700 border-gray-300 hover:bg-gray-100' }}">
+          {{ $c }}
         </a>
       @endforeach
     </div>
@@ -44,16 +56,23 @@
   @if($events->count())
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-stretch">
       @foreach($events as $event)
-        {{-- 카드 전체 --}}
-        <div class="h-full rounded-xl border bg-white shadow-sm p-4 flex flex-col">
-          
+        {{-- 배지 위치를 위해 relative 추가 --}}
+        <div class="relative h-full rounded-xl border bg-white shadow-sm p-4 flex flex-col">
+
+          {{-- 선택된 카테고리를 오른쪽 상단 뱃지로 노출 (있을 때만) --}}
+          @if(!empty($event->category))
+            <span class="absolute top-3 right-3 text-xs px-2 py-1 rounded-full border font-medium">
+              {{ $event->category }}
+            </span>
+          @endif
+
           {{-- 상단 정보 --}}
           <div>
             <div class="text-xs text-gray-500">
               {{ $event->event_date->format('M d, g:i A') }}
             </div>
 
-            <a href="{{ route('events.show', $event) }}" 
+            <a href="{{ route('events.show', $event) }}"
                class="mt-1 block text-[15px] font-semibold text-gray-900 hover:underline">
               {{ $event->title }}
             </a>
@@ -91,14 +110,11 @@
       @endforeach
     </div>
 
-    {{-- 페이지네이션 --}}
     <div class="mt-8 flex flex-col items-center space-y-2">
-        {{-- 페이지 버튼 --}}
-        <div class="flex justify-center">
-            {{ $events->onEachSide(1)->links() }}
-        </div>
+      <div class="flex justify-center">
+        {{ $events->onEachSide(1)->links() }}
+      </div>
     </div>
-
   @else
     <div class="bg-white border rounded p-6 text-gray-600 text-center">
       No events found.

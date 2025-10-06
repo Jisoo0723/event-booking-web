@@ -81,19 +81,23 @@ class Event extends Model
         return $query->where('event_date', '<=', now(config('app.timezone')));
     }
 
-    public function scopeCategory(Builder $q, ?string $category): Builder
+    public function scopeCategory($query, $category)
     {
-        return ($category && $category !== 'All')
-            ? $q->where('category', $category)
-            : $q;
+        // 파라미터 없거나 'All'이면 필터 안함
+        if (!$category || $category === 'All') {
+            return $query;
+        }
+        return $query->where('category', $category);
     }
 
-    public function scopeSearch(Builder $q, ?string $term): Builder
+    public function scopeSearch($query, $q)
     {
-        if (!$term) return $q;
-        return $q->where(function ($qq) use ($term) {
-            $qq->where('title', 'like', "%{$term}%")
-            ->orWhere('location', 'like', "%{$term}%");
+        if (!$q) return $query;
+
+        return $query->where(function ($qq) use ($q) {
+            $qq->where('title', 'like', "%{$q}%")
+            ->orWhere('description', 'like', "%{$q}%")
+            ->orWhere('location', 'like', "%{$q}%");
         });
     }
 

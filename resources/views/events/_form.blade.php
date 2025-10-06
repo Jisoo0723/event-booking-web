@@ -33,6 +33,22 @@
   </div>
 
   <div>
+    <label for="category" class="block text-sm font-medium">Category</label>
+    <select name="category" id="category" class="mt-1 w-full border rounded p-2">
+      <option value="">-- Select a category --</option>
+      @foreach ($categories as $category)
+        <option value="{{ $category }}"
+          {{ old('category', $event->category ?? '') === $category ? 'selected' : '' }}>
+          {{ $category }}
+        </option>
+      @endforeach
+    </select>
+    @error('category')
+      <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+    @enderror
+  </div>
+
+  <div>
     <label class="block text-sm font-medium">Location</label>
     <input type="text" name="location" value="{{ old('location', $event->location) }}"
            class="mt-1 w-full border rounded p-2" required>

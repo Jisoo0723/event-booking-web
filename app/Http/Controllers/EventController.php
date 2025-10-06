@@ -10,34 +10,50 @@ class EventController extends Controller
 {
     use AuthorizesRequests;
 
+    // 인기 이벤트 (bookings_count 내림차순)
     public function indexPopular()
     {
+        // 파라미터 받기
+        $category = request('category', 'All');
+
+        // 2️쿼리 작성
         $events = Event::with('organiser')
             ->upcoming()
+            ->category($category)            
             ->withCount('bookings')
             ->orderByDesc('bookings_count')
             ->orderBy('event_date', 'asc')
-            ->paginate(8);
+            ->paginate(8)
+            ->withQueryString();
 
-        return view('home', compact('events'));
-    }
-
-    public function index()
-    {
-        $events = Event::with('organiser')
-            ->upcoming()
-            ->withCount('bookings')
-            ->orderBy('event_date', 'asc')
-            ->paginate(8);
-
+        // 카테고리 목록
         $categories = ['All','Art','Business','Fashion','Film','Food & Drink','Music','Sports','Tech'];
 
-        return view('events.index', [
-            'events'     => $events,
-            'q'          => request('q'),
-            'category'   => request('category'),
-            'categories' => $categories,
-        ]);
+        return view('home', compact('events', 'categories', 'category'));
+    }
+
+    // 전체 이벤트 목록
+    public function index()
+    {
+        // 파라미터 받기
+        $q = request('q');
+        $category = request('category', 'All');
+
+        // 카테고리 목록
+        $categories = ['All','Art','Business','Fashion','Film','Food & Drink','Music','Sports','Tech'];
+
+        // 쿼리 작성
+        $events = Event::with('organiser')
+            ->upcoming()
+            ->search($q)
+            ->category($category)
+            ->withCount('bookings')
+            ->orderBy('event_date', 'asc')
+            ->paginate(8)
+            ->withQueryString();
+
+        // 뷰로 전달
+        return view('events.index', compact('events', 'categories', 'category', 'q'));
     }
 
     // Event detail view
@@ -45,7 +61,6 @@ class EventController extends Controller
     {
         $event->load('organiser')->loadCount('bookings');
 
-        // Block access if event already passed
         if ($event->isPast() && !(auth()->check() && auth()->user()->role === 'organiser')) {
             return redirect()->route('events.index')->with('error', 'This event has passed.');
         }
@@ -54,36 +69,30 @@ class EventController extends Controller
         $isAttendee  = $user && $user->role === 'attendee';
         $isOrganiser = $user && $user->role === 'organiser';
 
-        $alreadyBooked = false;
-        $myBookingId   = null;
+        $myBooking = $user
+            ? $event->bookings()->where('user_id', $user->id)->first(['id'])
+            : null;
 
-        if ($user) {
-            $myBooking = $event->bookings()
-                ->where('user_id', $user->id)
-                ->first(['id']);
-
-            $alreadyBooked = !is_null($myBooking);
-            $myBookingId   = $myBooking?->id;
-        }
-
-        $isGuest  = !$user;
-        $ownerId  = $event->organiser_id ?? $event->organizer_id ?? null;
-        $ownsEvent = $isOrganiser && ($ownerId === ($user->id ?? null));
+        $alreadyBooked = !is_null($myBooking);
+        $myBookingId   = $myBooking?->id;
+        $isGuest       = !$user;
+        $ownerId       = $event->organiser_id ?? $event->organizer_id ?? null;
+        $ownsEvent     = $isOrganiser && ($ownerId === ($user->id ?? null));
 
         return view('events.show', [
-            'event' => $event,
-            'isGuest' => $isGuest,
-            'isAttendee' => $isAttendee,
-            'isOrganiser' => $isOrganiser,
+            'event'         => $event,
+            'isGuest'       => $isGuest,
+            'isAttendee'    => $isAttendee,
+            'isOrganiser'   => $isOrganiser,
             'alreadyBooked' => $alreadyBooked,
-            'myBookingId' => $myBookingId,
-            'ownerId' => $ownerId,
-            'ownsEvent' => $ownsEvent,
-            'date' => $event->event_date ? $event->event_date->timezone(config('app.timezone')) : null,
-            'orgName' => $event->organiser->name ?? $event->organiser?->email ?? 'Organizer',
-            'remaining' => method_exists($event, 'remainingSpots')
-                ? $event->remainingSpots()
-                : max(0, (int)$event->capacity - (int)($event->bookings_count ?? $event->bookings()->count())),
+            'myBookingId'   => $myBookingId,
+            'ownerId'       => $ownerId,
+            'ownsEvent'     => $ownsEvent,
+            'date'          => $event->event_date ? $event->event_date->timezone(config('app.timezone')) : null,
+            'orgName'       => $event->organiser->name ?? $event->organiser?->email ?? 'Organizer',
+            'remaining'     => method_exists($event, 'remainingSpots')
+                                ? $event->remainingSpots()
+                                : max(0, (int)$event->capacity - (int)($event->bookings_count ?? $event->bookings()->count())),
         ]);
     }
 
@@ -101,7 +110,12 @@ class EventController extends Controller
     // Organiser create form
     public function create()
     {
-        return view('events.create', ['event' => new Event()]);
+        $categories = ['Art', 'Business', 'Fashion', 'Film', 'Food & Drink', 'Music', 'Sports', 'Tech'];
+
+        return view('events.create', [
+            'event' => new Event(),
+            'categories' => $categories,
+        ]);
     }
 
     // Store
@@ -128,7 +142,6 @@ class EventController extends Controller
     public function update(EventRequest $request, Event $event)
     {
         $this->authorize('update', $event);
-
         $event->update($request->validated());
 
         return redirect()
@@ -147,4 +160,3 @@ class EventController extends Controller
             ->with('success', 'Event deleted.');
     }
 }
-
