@@ -42,34 +42,42 @@
               {{ max(0, (int)$event->capacity - (int)($event->bookings_count ?? 0)) }}
             </td>
             <td class="p-3">
+              @php
+                $bookingsCount = (int) ($event->bookings_count ?? 0);
+              @endphp
+
               {{-- Edit --}}
               <a href="{{ route('events.edit', ['event' => $event->id]) }}" class="text-blue-600 underline">Edit</a>
 
               {{-- CSV --}}
               <a href="{{ route('bookings.export', ['event' => $event->id]) }}" class="text-indigo-600 hover:underline ml-2">CSV</a>
 
-              {{-- 참가자 보기(모달 오픈) --}}
+              {{-- Attendees --}}
               <button
                 type="button"
                 class="text-indigo-600 hover:underline ml-2"
-                onclick="openAttendeesModal(this)"     
+                onclick="openAttendeesModal(this)"
                 data-url="{{ route('events.attendees', $event) }}">
                 Attendees
               </button>
 
-
               {{-- Delete --}}
-              <form action="{{ route('events.destroy', ['event' => $event->id]) }}"
-                    method="POST"
-                    class="inline"
-                    onsubmit="return confirm('Delete this event?');">
-                @csrf
-                @method('DELETE')
-                <button type="submit" class="text-red-600 hover:underline ml-2">
-                  Delete
-                </button>
-              </form>
+              @if($bookingsCount === 0)
+                <form action="{{ route('events.destroy', ['event' => $event->id]) }}"
+                      method="POST"
+                      class="inline"
+                      onsubmit="return confirm('Delete this event?');">
+                  @csrf
+                  @method('DELETE')
+                  <button type="submit" class="text-red-600 hover:underline ml-2">
+                    Delete
+                  </button>
+                </form>
+              @else
+                <span class="text-gray-400 ml-2" title="Bookings exist, cannot delete">Delete</span>
+              @endif
             </td>
+
           </tr>
         @endforeach
       </tbody>

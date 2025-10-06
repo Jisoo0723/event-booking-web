@@ -19,8 +19,8 @@ class EventRequest extends FormRequest
             'description' => ['nullable','string','max:2000'],
             'event_date'  => ['required','date','after:now'], // 과거 금지
             'location'    => ['required','string','max:255'],
-            'capacity' => ['required','integer','min:1'],
-            'category'    => ['nullable','string','max:50'],
+            'capacity'    => ['required','integer','min:1'],
+            'category'    => ['nullable','in:Art,Business,Fashion,Film,Food & Drink,Music,Sports,Tech'],
             'image'       => ['nullable','string','max:255'],
         ];
     }

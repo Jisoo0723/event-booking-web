@@ -135,7 +135,13 @@ class EventController extends Controller
     public function edit(Event $event)
     {
         $this->authorize('update', $event);
-        return view('events.edit', compact('event'));
+
+        $categories = ['Art','Business','Fashion','Film','Food & Drink','Music','Sports','Tech'];
+
+        return view('events.edit', [
+            'event' => $event,
+            'categories' => $categories,   // ← 추가
+        ]);
     }
 
     // Update
@@ -153,8 +159,34 @@ class EventController extends Controller
     public function destroy(Event $event)
     {
         $this->authorize('delete', $event);
+
+        // 이미 예약이 있으면 삭제 금지 (정책 + 방어로직)
+        if (isset($event->bookings_count)) {
+            if ($event->bookings_count > 0) {
+                return back()->with('error', 'This event has bookings and cannot be deleted.');
+            }
+        } else {
+            if ($event->bookings()->exists()) {
+                return back()->with('error', 'This event has bookings and cannot be deleted.');
+            }
+        }
+
         $event->delete();
 
+        // 어디서 왔는지 보고 자연스럽게 돌려보내기
+        $referer = url()->previous();
+
+        // 대시보드 라우트가 있고, 이전 URL이 대시보드라면 대시보드로
+        if (\Illuminate\Support\Facades\Route::has('organiser.dashboard')) {
+            $dashboardUrl = route('organiser.dashboard', [], false); // 상대 경로
+            if ($referer && str_contains($referer, $dashboardUrl)) {
+                return redirect()
+                    ->route('organiser.dashboard')
+                    ->with('success', 'Event deleted.');
+            }
+        }
+
+        // 기본 폴백: 이벤트 목록
         return redirect()
             ->route('events.index')
             ->with('success', 'Event deleted.');

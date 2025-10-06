@@ -28,7 +28,14 @@ class EventPolicy
      */
     public function delete(User $user, Event $event): bool
     {
-        return $this->manage($user, $event);
+        if ($user->role !== 'organiser') return false;
+        if ($user->id !== (int) $event->organizer_id) return false;
+
+        // withCount 로 미리 로드되어 있으면 그 값 사용, 없으면 쿼리
+        $count = $event->bookings_count ?? $event->bookings()->count();
+
+        // 예약이 0건일 때만 삭제 허용
+        return $count === 0;
     }
 
     /**
