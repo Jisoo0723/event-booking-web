@@ -56,6 +56,23 @@ class EventController extends Controller
         return view('events.index', compact('events', 'categories', 'category', 'q'));
     }
 
+    public function homeFilter()
+    {
+        $category = request('category');
+
+        $events = Event::with('organiser')
+            ->upcoming()
+            ->when($category && $category !== 'All', fn($q) => $q->where('category', $category))
+            ->withCount('bookings')
+            ->orderByDesc('bookings_count')
+            ->orderBy('event_date','asc')
+            ->paginate(8);
+
+        // 카드 조각만 반환 (AJAX로 교체)
+        return view('partials.events_cards', compact('events'))->render();
+    }
+
+
     // Event detail view
     public function show(Event $event)
     {

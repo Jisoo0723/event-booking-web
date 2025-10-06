@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Route;
 // 홈 (미래 이벤트 목록은 HomeController에서 처리)
 Route::get('/', [EventController::class, 'indexPopular'])->name('home');
 
+Route::get('/home/filter', [EventController::class, 'homeFilter'])->name('home.filter');
+
 // 대시보드(필요 시 유지)
 Route::get('/dashboard', fn () => view('dashboard'))
     ->middleware(['auth', 'verified'])

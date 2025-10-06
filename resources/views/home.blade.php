@@ -16,58 +16,45 @@
   {{-- <form ...> ... </form> --}}
   {{-- 카테고리 탭 ... --}}
 
-  {{-- 이벤트 카드 그리드 (events.index와 동일 마크업) --}}
-  @if($events->count())
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-stretch">
-      @foreach($events as $event)
-        <div class="h-full rounded-xl border bg-white shadow-sm p-4 flex flex-col">
-          <div>
-            <div class="text-xs text-gray-500">
-              {{ $event->event_date->format('M d, g:i A') }}
-            </div>
-            <a href="{{ route('events.show', $event) }}"
-               class="mt-1 block text-[15px] font-semibold text-gray-900 hover:underline">
-              {{ $event->title }}
-            </a>
-            <div class="mt-1 flex items-center gap-1.5 text-sm text-gray-600">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2a7 7 0 017 7c0 5.25-7 11-7 11S5 14.25 5 9a7 7 0 017-7zm0 9.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5z"/>
-              </svg>
-              <span class="truncate">{{ $event->location }}</span>
-            </div>
-            @if($event->description)
-              <p class="mt-2 text-sm text-gray-700 line-clamp-3 min-h-[60px]">
-                {{ $event->description }}
-              </p>
-            @else
-              <div class="min-h-[60px]"></div>
-            @endif
-          </div>
+  {{-- 카테고리 버튼 --}}
+  <div class="mb-4 flex flex-wrap gap-2" id="home-cats">
+    @foreach($categories as $c)
+      <button
+        class="cat-btn text-sm px-3 py-1.5 rounded-full border {{ ($category ?? 'All')===$c ? 'bg-blue-600 text-white border-blue-600' : 'text-gray-700 border-gray-300 hover:bg-gray-100' }}"
+        data-cat="{{ $c }}">
+        {{ $c }}
+      </button>
+    @endforeach
+  </div>
 
-          <div class="mt-auto pt-4">
-            <div class="text-sm text-gray-600">
-              Capacity: {{ $event->capacity }}
-              · Booked: {{ $event->bookings_count ?? $event->bookings()->count() }}
-              · Remaining: {{ $event->remainingSpots() }}
-            </div>
-            <a href="{{ route('events.show', $event) }}"
-               class="mt-3 inline-flex w-full items-center justify-center rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-800 hover:bg-gray-50">
-              View Details
-            </a>
-          </div>
-        </div>
-      @endforeach
-    </div>
+  {{-- 이벤트 카드 컨테이너 (초기 렌더) --}}
+  <div id="home-events">
+    @include('partials.events_cards', ['events' => $events])
+  </div>
 
-    <div class="mt-8 flex flex-col items-center space-y-2">
-      <div class="flex justify-center">
-        {{ $events->onEachSide(1)->links() }}
-      </div>
-    </div>
-  @else
-    <div class="bg-white border rounded p-6 text-gray-600 text-center">
-      No events found.
-    </div>
-  @endif
+  {{-- AJAX 필터 스크립트 --}}
+  <script>
+    document.getElementById('home-cats').addEventListener('click', async (e) => {
+      const btn = e.target.closest('.cat-btn');
+      if (!btn) return;
+
+      const cat = btn.dataset.cat;
+      const url = new URL('{{ route('home.filter') }}', window.location.origin);
+      if (cat && cat !== 'All') url.searchParams.set('category', cat);
+
+      const res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+      const html = await res.text();
+      document.getElementById('home-events').innerHTML = html;
+
+      // 버튼 스타일 토글
+      document.querySelectorAll('.cat-btn').forEach(b => {
+        b.classList.remove('bg-blue-600','text-white','border-blue-600');
+        b.classList.add('text-gray-700','border-gray-300');
+      });
+      btn.classList.add('bg-blue-600','text-white','border-blue-600');
+      btn.classList.remove('text-gray-700','border-gray-300');
+    });
+  </script>
+
 </div>
 @endsection
